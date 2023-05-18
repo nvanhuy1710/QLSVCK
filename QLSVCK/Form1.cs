@@ -84,7 +84,22 @@ namespace QLSVCK
 
         private void buttonSort_Click(object sender, EventArgs e)
         {
-
+            List<Student> students = QLSVBLL.Instance.GetStudentsByInfor(((CBBItem)comboBoxHP.SelectedItem), textBoxSearch.Text, comboBoxSort.SelectedItem.ToString());
+            dataGridView1.DataSource = students.Select((p, index) => new {
+                STT = index + 1,
+                p.MSSV,
+                TenSV = p.Name,
+                p.LopSH,
+                StudentCourseId = p.Student_Courses.FirstOrDefault().Id,
+                TenHocPhan = p.Student_Courses.Single().Course.Name,
+                DiemBT = p.Student_Courses.Single().DBT,
+                DiemGK = p.Student_Courses.Single().DGK,
+                DiemCK = p.Student_Courses.Single().DCK,
+                TongKet = p.Student_Courses.Single().DBT * 0.2 + p.Student_Courses.Single().DGK * 0.2 + p.Student_Courses.Single().DCK * 0.3,
+                Ngaythi = p.Student_Courses.Single().ExamDate
+            }).ToList();
+            dataGridView1.Columns[1].Visible = false;
+            dataGridView1.Columns["StudentCourseId"].Visible = false;
         }
     }
 }

@@ -70,11 +70,46 @@ namespace QLSVCK.BLL
             }
         }
 
-        public List<Student> GetStudentsByInfor(CBBItem MHP, string Name)
+        public List<Student> GetStudentsByInfor(CBBItem MHP, string Name, string sortType = null)
         {
             ModelSV db = new ModelSV();
-            if(!MHP.Value.Equals("All")) return db.Students.Where(p => p.Student_Courses.FirstOrDefault().CourseId == MHP.Id && (p.MSSV.Contains(Name) || p.Name.Contains(Name))).ToList();
-            else return db.Students.Where(p => (p.MSSV.Contains(Name) || p.Name.Contains(Name))).ToList();
+            List<Student> students = new List<Student>();
+            if(!MHP.Value.Equals("All")) students = db.Students.Where(p => p.Student_Courses.FirstOrDefault().CourseId == MHP.Id && (p.MSSV.Contains(Name) || p.Name.Contains(Name))).ToList();
+            else students = db.Students.Where(p => (p.MSSV.Contains(Name) || p.Name.Contains(Name))).ToList();
+            if(sortType != null)
+            {
+                switch(sortType)
+                {
+                    case "Name":
+                        students = students.OrderBy(p => p.Name).ToList();
+                        break;
+                    case "LopSH":
+                        students = students.OrderBy(p => p.LopSH).ToList();
+                        break;
+                    case "Genre":
+                        students = students.OrderBy(p => p.Genre).ToList();
+                        break;
+                    case "DiemBT":
+                        students = students.OrderBy(p => p.Student_Courses.FirstOrDefault().DBT).ToList();
+                        break;
+                    case "DiemGK":
+                        students = students.OrderBy(p => p.Student_Courses.FirstOrDefault().DGK).ToList();
+                        break;
+                    case "DiemCK":
+                        students = students.OrderBy(p => p.Student_Courses.FirstOrDefault().DCK).ToList();
+                        break;
+                    case "HocPhan":
+                        students = students.OrderBy(p => p.Student_Courses.FirstOrDefault().Course.Name).ToList();
+                        break;
+                    case "NgayThi":
+                        students = students.OrderBy(p => p.Student_Courses.FirstOrDefault().ExamDate).ToList();
+                        break;
+                    default:
+                        break;
+
+                }
+            }
+            return students;
         }
 
         public Student GetStudentByMSSV(string MSSV)

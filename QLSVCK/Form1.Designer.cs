@@ -78,6 +78,15 @@
             // comboBoxSort
             // 
             this.comboBoxSort.FormattingEnabled = true;
+            this.comboBoxSort.Items.AddRange(new object[] {
+            "Name",
+            "LopSH",
+            "Genre",
+            "DiemBT",
+            "DiemGK",
+            "DiemCK",
+            "HocPhan",
+            "NgayThi"});
             this.comboBoxSort.Location = new System.Drawing.Point(629, 381);
             this.comboBoxSort.Name = "comboBoxSort";
             this.comboBoxSort.Size = new System.Drawing.Size(151, 28);
