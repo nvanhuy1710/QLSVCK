@@ -1,4 +1,5 @@
-﻿using QLSVCK.DB;
+﻿using QLSVCK.DAL;
+using QLSVCK.DB;
 using QLSVCK.DTO;
 using System;
 using System.Collections.Generic;
@@ -26,56 +27,48 @@ namespace QLSVCK.BLL
 
         public List<CBBItem> GetCBBItemsHP()
         {
-            using(ModelSV db = new ModelSV())
+            List<Course> Courses = QLSVDAL.Instance.GetAllCourses();
+            List<CBBItem> cBBItems = new List<CBBItem>();
+            CBBItem cBBItem1 = new CBBItem()
             {
-                List<CBBItem> cBBItems = new List<CBBItem>();
-                CBBItem cBBItem1 = new CBBItem()
-                {
-                    Id = "",
-                    Value = "All"
-                };
-                if(!cBBItems.Contains(cBBItem1))
-                {
-                    cBBItems.Add(cBBItem1);
-                }
-                foreach(Course course in db.Courses.ToList())
-                {
-                    CBBItem cBBItem = new CBBItem()
-                    {
-                        Id = course.Id,
-                        Value = course.Name,
-                    };
-                    if(!cBBItems.Contains(cBBItem)) cBBItems.Add(cBBItem);
-                }
-                return cBBItems;
+                Id = "",
+                Value = "All"
+            };
+            if(!cBBItems.Contains(cBBItem1))
+            {
+                cBBItems.Add(cBBItem1);
             }
+            foreach(Course course in Courses)
+            {
+                CBBItem cBBItem = new CBBItem()
+                {
+                    Id = course.Id,
+                        Value = course.Name,
+                };
+                if(!cBBItems.Contains(cBBItem)) cBBItems.Add(cBBItem);
+            }
+            return cBBItems;
         }
 
         public List<CBBItem> GetCBBItemsLSH()
         {
-            using (ModelSV db = new ModelSV())
+            List<string> lshs = QLSVDAL.Instance.GetAllLSH();
+            List<CBBItem> cBBItems = new List<CBBItem>();
+            foreach (string lsh in lshs)
             {
-                List<CBBItem> cBBItems = new List<CBBItem>();
-                List<string> lshs = db.Students.Select(p => p.LopSH).Distinct().ToList();
-                foreach (string lsh in lshs)
+                CBBItem cBBItem = new CBBItem()
                 {
-                    CBBItem cBBItem = new CBBItem()
-                    {
-                        Id = string.Empty,
-                        Value = lsh,
-                    };
-                    if (!cBBItems.Contains(cBBItem)) cBBItems.Add(cBBItem);
-                }
-                return cBBItems;
+                    Id = string.Empty,
+                    Value = lsh,
+                };
+                if (!cBBItems.Contains(cBBItem)) cBBItems.Add(cBBItem);
             }
+            return cBBItems;
         }
 
-        public List<Student> GetStudentsByInfor(CBBItem MHP, string Name, string sortType = null)
+        public List<StudentDTO> GetStudentsByInfor(CBBItem MHP, string Name, string sortType = null)
         {
-            ModelSV db = new ModelSV();
-            List<Student> students = new List<Student>();
-            if(!MHP.Value.Equals("All")) students = db.Students.Where(p => p.Student_Courses.FirstOrDefault().CourseId == MHP.Id && (p.MSSV.Contains(Name) || p.Name.Contains(Name))).ToList();
-            else students = db.Students.Where(p => (p.MSSV.Contains(Name) || p.Name.Contains(Name))).ToList();
+            List<Student> students = QLSVDAL.Instance.GetStudentsByInfor(MHP, Name);
             if(sortType != null)
             {
                 switch(sortType)
@@ -109,75 +102,85 @@ namespace QLSVCK.BLL
 
                 }
             }
-            return students;
-        }
-
-        public Student GetStudentByMSSV(string MSSV)
-        {
-            ModelSV db = new ModelSV();
-            return db.Students.Where(p => p.MSSV == MSSV).SingleOrDefault();
-        }
-
-        public void AddStudent(Student student)
-        {
-            ModelSV db = new ModelSV();
-            db.Students.Add(student);
-            db.SaveChanges();
-            foreach(Student_Course student_Course in student.Student_Courses)
+            return students.Select((p, index) =>
             {
-                student_Course.MSSV = student.MSSV;
-            }
-            //AddStudentCourse(student.Student_Courses.ToList());
+                StudentDTO svDTO = MapToDTO(p);
+                svDTO.STT = index + 1;
+                return svDTO;
+            }).ToList();
         }
 
-        public void AddStudentCourse(List<Student_Course> studentCourses)
+        public StudentDTO GetStudentByMSSV(string MSSV)
         {
-            ModelSV db = new ModelSV();
-            foreach(Student_Course studentCourse in studentCourses)
+            return MapToDTO(QLSVDAL.Instance.GetStudentByMSSV(MSSV));
+        }
+
+        public void AddStudent(StudentDTO student)
+        {
+            Student student1 = new Student()
             {
-                studentCourse.Student = null;
-                db.Students_Courses.Add(studentCourse);
-                db.SaveChanges();
-            }
-        }
-
-        public void UpdateStudent(Student student)
-        {
-            ModelSV db = new ModelSV();
-            Student student1 = db.Students.Where(p => p.MSSV == student.MSSV).Single();
-            student1.Name = student.Name;
-            student1.LopSH = student.LopSH;
-            student1.Genre = student.Genre;
-            db.SaveChanges();
-            UpdateStudentCourse(student.Student_Courses.ToList());
-        }
-
-        public void UpdateStudentCourse(List<Student_Course> studentCourses)
-        {
-            ModelSV db = new ModelSV();
-            foreach(Student_Course studentCourse in studentCourses)
+                MSSV = student.MSSV,
+                Name = student.Name,
+                Genre = student.Genre,
+                LopSH = student.LopSH,
+            };
+            QLSVDAL.Instance.AddStudent(student1);
+            Student_Course student_Course = new Student_Course()
             {
-                Student_Course student_Course = db.Students_Courses.Where(p => p.Id == studentCourse.Id).Single();
-                student_Course.DBT = studentCourse.DBT;
-                student_Course.DGK = studentCourse.DGK;
-                student_Course.DCK = studentCourse.DCK;
-                student_Course.CourseId = studentCourse.CourseId;
-            }
-            db.SaveChanges();
+                DBT = student.DBT,
+                DGK = student.DGK,
+                DCK = student.DCK,
+                MSSV = student.MSSV,
+                CourseId = student.CourseId,
+                ExamDate = student.ExamDate,
+            };
+            QLSVDAL.Instance.AddStudent_Course(student_Course);
+        }
+
+        public void UpdateStudent(StudentDTO student)
+        {
+            Student student1 = new Student()
+            {
+                MSSV = student.MSSV,
+                Name = student.Name,
+                Genre = student.Genre,
+                LopSH = student.LopSH,
+            };
+            QLSVDAL.Instance.UpdateStudent(student1);
+            Student_Course student_Course = new Student_Course()
+            {
+                DBT = student.DBT,
+                DGK = student.DGK,
+                DCK = student.DCK,
+                MSSV = student.MSSV,
+                CourseId = student.CourseId,
+                ExamDate = student.ExamDate,
+            };
+            QLSVDAL.Instance.UpdateStudentCourse(student_Course);
         }
 
         public void DeleteStudent(string MSSV)
         {
-            ModelSV db = new ModelSV();
-            Student student = db.Students.Where(p => p.MSSV == MSSV).Single();
-            List<Student_Course> student_Courses = student.Student_Courses.ToList();
-            foreach(Student_Course student_Course in student_Courses)
+            QLSVDAL.Instance.DeleteStudent(MSSV);
+        }
+
+        public StudentDTO MapToDTO(Student student)
+        {
+            return new StudentDTO()
             {
-                db.Students_Courses.Remove(student_Course);
-                
-            }
-            db.Students.Remove(student);
-            db.SaveChanges();
+                MSSV = student.MSSV,
+                Name = student.Name,
+                LopSH = student.LopSH,
+                Genre = student.Genre,
+                DBT = student.Student_Courses.FirstOrDefault().DBT,
+                DGK = student.Student_Courses.FirstOrDefault().DGK,
+                DCK = student.Student_Courses.FirstOrDefault().DCK,
+                TK = Math.Round(student.Student_Courses.FirstOrDefault().DBT * 0.2 + student.Student_Courses.FirstOrDefault().DGK * 0.2
+                    + student.Student_Courses.FirstOrDefault().DCK * 0.3, 3),
+                CourseId = student.Student_Courses.FirstOrDefault().CourseId,
+                CourseName = student.Student_Courses.FirstOrDefault().Course.Name,
+                ExamDate = student.Student_Courses.FirstOrDefault().ExamDate.Date,
+            };
         }
     }
 }
